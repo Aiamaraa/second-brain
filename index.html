@@ -1,10 +1,177 @@
 <!doctype html><html lang="mn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Амараагийн Second Brain</title>
-<style>body{margin:0;background:#0B1430;color:#FBF4E2;font-family:Inter,system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:32px 16px}
-h1{font-size:clamp(28px,5vw,48px);margin:.2em 0}p{color:#AEB8D6;line-height:1.6}.chip{display:inline-block;border:1px solid #E3B341;color:#E3B341;border-radius:99px;padding:4px 12px;font-size:13px;letter-spacing:.08em}
-video,img{width:100%;border-radius:16px;margin:16px 0;box-shadow:0 12px 32px #0006}footer{color:#8A93AD;font-size:14px;margin-top:24px}</style></head>
-<body><main><span class="chip">WAY ACADEMY · SEASON 2</span><h1>🧠 Амараагийн Second Brain</h1>
+<meta name="description" content="Obsidian + Claude Code дээр бүтээсэн хоёр дахь тархи — интерактив graph">
+<style>
+:root{--bg:#0B1430;--bg2:#1B1F4B;--card:#18244A;--cream:#FBF4E2;--muted:#AEB8D6;--gold:#E3B341}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(160deg,var(--bg),var(--bg2));color:var(--cream);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+main{max-width:1100px;margin:auto;padding:32px 16px}
+h1{font-size:clamp(28px,5vw,48px);margin:.2em 0}
+h2{font-size:clamp(20px,3vw,28px);margin:40px 0 4px}
+p{color:var(--muted);line-height:1.6}
+.chip{display:inline-block;border:1px solid var(--gold);color:var(--gold);border-radius:99px;padding:4px 12px;font-size:13px;letter-spacing:.08em}
+video,img.full{width:100%;border-radius:16px;margin:16px 0;box-shadow:0 12px 32px #0006}
+footer{color:#8A93AD;font-size:14px;margin-top:32px}
+/* graph */
+.graph-wrap{position:relative;margin-top:12px;border-radius:20px;overflow:hidden;background:radial-gradient(circle at 50% 45%,#1d2a5c 0%,#0d1636 70%);border:1px solid #ffffff14;box-shadow:0 12px 40px #0007}
+#graph{display:block;width:100%;height:clamp(420px,62vh,640px);cursor:grab;touch-action:none}
+#graph.dragging{cursor:grabbing}
+.link{stroke:#ffffff26;stroke-width:1.2;transition:stroke .2s,stroke-width .2s}
+.link.hi{stroke:#E3B341;stroke-width:2.2}
+.node circle{stroke:#0B1430;stroke-width:2;transition:r .2s, filter .2s}
+.node text{fill:#FBF4E2;font-size:12px;pointer-events:none;paint-order:stroke;stroke:#0B1430;stroke-width:3px;stroke-linejoin:round;opacity:.92}
+.node.dim{opacity:.18}.link.dim{opacity:.08}
+.node:hover circle,.node.sel circle{filter:drop-shadow(0 0 8px currentColor)}
+.hint{position:absolute;left:14px;top:12px;font-size:13px;color:var(--muted);background:#0B1430aa;padding:6px 10px;border-radius:10px;pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 2px 0;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+/* panel */
+.panel{position:absolute;right:14px;top:14px;width:min(360px,calc(100% - 28px));background:#101a3ef2;backdrop-filter:blur(8px);border:1px solid #ffffff1f;border-radius:18px;padding:18px 18px 16px;box-shadow:0 16px 40px #000a;transform:translateY(-8px);opacity:0;pointer-events:none;transition:.25s}
+.panel.open{opacity:1;transform:none;pointer-events:auto}
+.panel .type,.panel h3{padding-right:30px}
+.panel .type{font-size:12px;letter-spacing:.1em;font-weight:700;text-transform:uppercase}
+.panel h3{margin:6px 0 10px;font-size:20px;line-height:1.3}
+.panel blockquote{margin:0;padding:10px 14px;border-left:4px solid var(--gold);background:#ffffff0a;border-radius:0 12px 12px 0;color:var(--cream);font-size:15px;line-height:1.55}
+.panel .src{font-size:12px;color:#8A93AD;margin-top:8px}
+.panel .rel{margin-top:12px;font-size:13px;color:var(--muted)}
+.panel .rel b{color:var(--cream);font-weight:600}
+.panel .rel button{all:unset;cursor:pointer;display:inline-block;margin:4px 6px 0 0;padding:3px 10px;border-radius:99px;background:#ffffff12;color:var(--cream);font-size:12px}
+.panel .rel button:hover{background:#ffffff26}
+.panel .x{all:unset;position:absolute;right:10px;top:6px;cursor:pointer;color:var(--muted);font-size:22px;line-height:1;padding:4px 8px}
+@media (max-width:640px){.panel{left:10px;right:10px;width:auto;top:auto;bottom:10px;max-height:60%;overflow:auto}.node text{font-size:11px}}
+</style></head>
+<body><main>
+<span class="chip">WAY ACADEMY · SEASON 2</span>
+<h1>🧠 Амараагийн Second Brain</h1>
 <p>Obsidian + Claude Code дээр бүтээсэн хоёр дахь тархи: PARA бүтэц, GTD хэмнэл, өөрийн үгээр бичсэн атомууд, хоёр AI туслах.</p>
+
+<h2>🕸 Миний тархины зураг</h2>
+<p>Obsidian-ий graph шиг: цэг бүр нэг санаа, шугам бүр «яагаад» холбогдсон. <b style="color:var(--cream)">Цэг дээр дарж</b> дотор нь юу байгааг хар, чирж хөдөлгө.</p>
+<div class="graph-wrap">
+  <svg id="graph" aria-label="Интерактив graph"></svg>
+  <div class="hint">👆 Цэг дээр дар · чир</div>
+  <div class="panel" id="panel" role="dialog" aria-live="polite">
+    <button class="x" id="close" aria-label="Хаах">×</button>
+    <div class="type" id="p-type"></div>
+    <h3 id="p-title"></h3>
+    <blockquote id="p-quote"></blockquote>
+    <div class="src" id="p-src"></div>
+    <div class="rel" id="p-rel"></div>
+  </div>
+</div>
+<div class="legend" id="legend"></div>
+
+<h2>🎬 Хэрхэн ажилладаг вэ</h2>
 <video src="vault.mp4" autoplay muted loop playsinline></video>
-<img src="vault.png" alt="Vault бүтцийн диаграм">
-<footer>Номын үндэс: GTD · BASB · PARA · Zettelkasten · Atomic Habits · 2026-11-10</footer></main></body></html>
+<img class="full" src="vault.png" alt="Vault бүтцийн диаграм">
+<footer>Номын үндэс: GTD · BASB · PARA · Zettelkasten · Atomic Habits · 2026-11-10</footer>
+</main>
+<script>
+const TYPES={
+  hub:{c:'#FBF4E2',n:'Төв'},soul:{c:'#F05D5E',n:'Зорилго'},project:{c:'#5FD39A',n:'Төсөл'},area:{c:'#F2A65A',n:'Хариуцлага'},
+  decision:{c:'#E3B341',n:'Шийдвэр'},atom:{c:'#4F8EF7',n:'Атом'},book:{c:'#9AD1D4',n:'Ном'},ai:{c:'#F28DB2',n:'AI баг'},flow:{c:'#C084FC',n:'Хэмнэл'}
+};
+const N=[
+ {id:'brain',t:'hub',l:'🧠 Second Brain',r:18,q:'Бодлоо гадаад системд хадгалж, ирээдүйн өөртөө бэлтгэнэ. Толгой санаа гаргахад, vault хадгалахад.',s:'Building a Second Brain (Tiago Forte) — гол санаа'},
+ {id:'soul',t:'soul',l:'🧭 SOUL',r:13,q:'Миний зорилго, асуултууд, хил хязгаар. Шийдвэр бүрийг үүнтэй тулгаж хардаг.',s:'00-Soul/SOUL.md'},
+ {id:'g1',t:'soul',l:'🎓 Berkeley · Data Analytics',r:10,q:'Berkeley-ийн community college-д Data Analytics мэргэжлээр сурах. Урилга ирсэн, хичээл 1-р сарын 9-нд эхэлнэ.',s:'Зорилго №1'},
+ {id:'g2',t:'soul',l:'🤖 Компьютер, AI чадвар',r:10,q:'Компьютер, AI ашиглах чадвараа сайжруулах — Way Academy «Second Brain + AI» сургалт.',s:'Зорилго №2'},
+ {id:'g3',t:'soul',l:'🇬🇧 Англи хэл',r:10,q:'Англи хэлээ сайжруулж, IELTS өгөх.',s:'Зорилго №3'},
+ {id:'p1',t:'project',l:'Berkeley-д элсэх',r:10,q:'Урилга ✅ → визний бичиг баримт ✅ → визний ярилцлага 12-04.',s:'02-Projects'},
+ {id:'p2',t:'project',l:'IELTS оноо авах',r:9,q:'Шалгалтаа энэ жилдээ өгнө. Өдөр бүр 5 үг.',s:'02-Projects'},
+ {id:'p3',t:'project',l:'Way Academy курс',r:10,q:'12 хичээлээс 6 нь дууссан. Чадвар 6/7. Демо өдөр 12-01.',s:'02-Projects'},
+ {id:'p4',t:'project',l:'Илтгэл · Bridge',r:8,q:'«Асуудал шийдэх чадвар» илтгэл, 11-14/15.',s:'02-Projects'},
+ {id:'a1',t:'area',l:'📚 Сурлага',r:9,q:'Way Academy, Bridge Academy — байнгын хариуцлага, дуусах хугацаагүй.',s:'03-Areas'},
+ {id:'a2',t:'area',l:'💪 Эрүүл мэнд',r:8,q:'Нойр, өглөөний дасгал.',s:'03-Areas'},
+ {id:'a3',t:'area',l:'🚚 Ажил · логистик',r:9,q:'Уул уурхайн салбарын логистик, нийлүүлэлт — долоо хоногт 6 өдөр.',s:'03-Areas'},
+ {id:'ai1',t:'ai',l:'🌸 Цэцэ',r:9,q:'Хувийн туслах: өдрийн төлөвлөгөө, сануулга, хамт бодох.',s:'03-Areas/AI Team'},
+ {id:'ai2',t:'ai',l:'🔬 Судлаач багш',r:9,q:'Өдөр бүр 07:30-д 5 сэдвээр жижиг даалгавар бэлддэг: Data Analytics, логистик, Way Academy, англи хэл, виз.',s:'03-Areas/AI Team'},
+ {id:'f1',t:'flow',l:'🌙 Оройн update',r:9,q:'Өдөр бүр ~22:00: юу хийсэн → юу үлдсэн → маргаашийн гол 3 → нойр. Миний анхны workflow.',s:'Workflow note'},
+ {id:'d1',t:'decision',l:'Алхамгүй төслийг хаа',r:8,q:'Идэвхтэй төсөл бүр дараагийн алхамтай байна. Алхамгүй бол — алхам өг эсвэл хаа.',s:'Шийдвэр · 2026-11-07 · GTD + PARA'},
+ {id:'d2',t:'decision',l:'Шийдвэр = алтан шар',r:8,q:'Graph-д шийдвэрүүдээ алтан шараар ялгаж, нэг харцаар олдог болсон.',s:'Шийдвэр · 2026-11-10'},
+ {id:'k1',t:'atom',l:'Ахисан үгс хэрэгтэй',r:8,q:'Мэдэхгүй үгс байсан. Цээжлэхэд хэцүү ч сурахаас өөр аргагүй. Data Analytics-д илүү advanced үгс хэрэг болно.',s:'Атом · 2026-11-10 · миний үгээр'},
+ {id:'k2',t:'atom',l:'Workflow → Skill',r:8,q:'Давтагддаг ажлаа эхлээд алхмаар бичнэ. 3 удаа давтагдвал skill болгоно.',s:'Атом · 2026-11-06 · Хичээл 05'},
+ {id:'k3',t:'atom',l:'«0 results» ≠ эвдрэл',r:7,q:'Base хоосон харагдвал ихэнхдээ view-ийн шүүлтүүрээс болсон. Харагдацаа соль.',s:'Атом · 2026-11-10'},
+ {id:'b1',t:'book',l:'GTD',r:8,q:'Бүгдийг нэг inbox-д хурааж, дараагийн бодит алхам, эзэн, төлөвтэй болго.',s:'Getting Things Done — David Allen (гол санаа)'},
+ {id:'b2',t:'book',l:'PARA',r:8,q:'Сэдвээр биш, хэрэгжих байдлаар ангил: төсөл, хариуцлага, нөөц, архив.',s:'The PARA Method — Tiago Forte (гол санаа)'},
+ {id:'b3',t:'book',l:'Zettelkasten',r:8,q:'Нэг санаа = нэг note, өөрийн үгээр, холбоос бүр «яагаад»-тай.',s:'How to Take Smart Notes — Sönke Ahrens (гол санаа)'},
+ {id:'b4',t:'book',l:'Atomic Habits',r:8,q:'Үр дүн зорилгоос биш, жижиг давтагдах системээс гарна.',s:'Atomic Habits — James Clear (гол санаа)'},
+ {id:'b5',t:'book',l:'BASB · CODE',r:8,q:'Цуглуул → цэгцэл → нэрлэж шүү → бүтээж түгээ.',s:'Building a Second Brain — Tiago Forte (гол санаа)'}
+];
+const L=[
+ ['brain','soul','зорилго'],['brain','p3','энэ курсээр бүтсэн'],['brain','b5','арга'],['brain','a1','хариуцлага'],['brain','f1','хэмнэл'],
+ ['soul','g1','зорилго'],['soul','g2','зорилго'],['soul','g3','зорилго'],
+ ['g1','p1','хэрэгжүүлэх төсөл'],['g3','p2','хэрэгжүүлэх төсөл'],['g2','p3','хэрэгжүүлэх төсөл'],['p1','p2','англи хэл шаардлагатай'],
+ ['a1','p3','сурлагын төсөл'],['a1','p4','сурлагын төсөл'],['a2','f1','нойр'],['a3','ai2','логистикийн даалгавар'],
+ ['ai1','f1','орой бүр'],['ai2','g1','Data Analytics бэлтгэл'],['ai2','p3','хичээл давтах'],['ai1','brain','туслах'],
+ ['d1','b1','эх: GTD'],['d1','b2','эх: PARA'],['d2','brain','graph'],
+ ['k1','p2','жишээ'],['k1','g1','шалтгаан'],['k2','f1','жишээ'],['k2','p3','Хичээл 05'],['k3','p3','шийдэл'],
+ ['b2','brain','бүтэц'],['b3','k1','атом бичих арга'],['b3','k2','атом бичих арга'],['b4','f1','өдөр бүрийн дадал'],['b1','f1','тойм']
+];
+// ---------- sim ----------
+const svg=document.getElementById('graph'), NS='http://www.w3.org/2000/svg';
+let W=svg.clientWidth,H=svg.clientHeight;
+const byId={};N.forEach((n,i)=>{const a=i/N.length*Math.PI*2;n.x=W/2+Math.cos(a)*W*.3;n.y=H/2+Math.sin(a)*H*.3;n.vx=0;n.vy=0;byId[n.id]=n;});
+byId.brain.x=W/2;byId.brain.y=H/2;
+const links=L.map(([a,b,why])=>({s:byId[a],t:byId[b],why}));
+const nbr={};N.forEach(n=>nbr[n.id]=new Set());links.forEach(k=>{nbr[k.s.id].add(k.t.id);nbr[k.t.id].add(k.s.id);});
+const gL=document.createElementNS(NS,'g'),gN=document.createElementNS(NS,'g');svg.append(gL,gN);
+links.forEach(k=>{k.el=document.createElementNS(NS,'line');k.el.setAttribute('class','link');gL.append(k.el);});
+N.forEach(n=>{
+  const g=document.createElementNS(NS,'g');g.setAttribute('class','node');g.style.color=TYPES[n.t].c;
+  const c=document.createElementNS(NS,'circle');c.setAttribute('r',n.r);c.setAttribute('fill',TYPES[n.t].c);
+  const tx=document.createElementNS(NS,'text');tx.textContent=n.l;tx.setAttribute('x',n.r+5);tx.setAttribute('y',4);
+  if(n.t==='hub'){tx.setAttribute('font-size','15');tx.setAttribute('font-weight','700');}
+  g.append(c,tx);gN.append(g);n.el=g;
+});
+let alpha=1, drag=null, moved=false;
+function tick(){
+  if(alpha>0.02 || drag){
+    for(let i=0;i<N.length;i++)for(let j=i+1;j<N.length;j++){const a=N[i],b=N[j];let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy+0.01,d=Math.sqrt(d2);const f=(W<700?2600:4200)/d2*alpha;dx/=d;dy/=d;a.vx-=dx*f;a.vy-=dy*f;b.vx+=dx*f;b.vy+=dy*f;}
+    const L0=Math.min(W,H)*.2;
+    links.forEach(k=>{let dx=k.t.x-k.s.x,dy=k.t.y-k.s.y,d=Math.sqrt(dx*dx+dy*dy)||1;const f=(d-L0)*0.04*alpha;dx/=d;dy/=d;k.s.vx+=dx*f;k.s.vy+=dy*f;k.t.vx-=dx*f;k.t.vy-=dy*f;});
+    N.forEach(n=>{n.vx+=(W/2-n.x)*0.004*alpha;n.vy+=(H/2-n.y)*0.006*alpha;if(n===drag)return;n.vx*=0.82;n.vy*=0.82;n.x+=n.vx;n.y+=n.vy;
+      const pad=n.r+6;n.x=Math.max(pad,Math.min(W-pad-(W<700?110:70),n.x));n.y=Math.max(pad,Math.min(H-pad,n.y));});
+    alpha*=0.985;
+  }
+  links.forEach(k=>{k.el.setAttribute('x1',k.s.x);k.el.setAttribute('y1',k.s.y);k.el.setAttribute('x2',k.t.x);k.el.setAttribute('y2',k.t.y);});
+  N.forEach(n=>n.el.setAttribute('transform',`translate(${n.x},${n.y})`));
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+// gentle idle breathing
+setInterval(()=>{if(!drag&&alpha<0.05){alpha=0.06;}},4000);
+// ---------- interaction ----------
+const pt=e=>{const r=svg.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
+N.forEach(n=>{
+  n.el.addEventListener('pointerdown',e=>{drag=n;moved=false;down=pt(e);svg.classList.add('dragging');svg.setPointerCapture(e.pointerId);e.stopPropagation();});
+  n.el.addEventListener('mouseenter',()=>highlight(n));n.el.addEventListener('mouseleave',()=>{if(!sel)highlight(null);else highlight(sel);});
+});
+let down={x:0,y:0};
+svg.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(e);if(!moved&&Math.abs(p.x-down.x)+Math.abs(p.y-down.y)<6)return;moved=true;drag.x=p.x;drag.y=p.y;drag.vx=drag.vy=0;alpha=Math.max(alpha,0.3);});
+svg.addEventListener('pointerup',()=>{if(drag&&!moved)open(drag);drag=null;svg.classList.remove('dragging');});
+svg.addEventListener('click',e=>{if(e.target===svg)close();});
+let sel=null;
+function highlight(n){
+  N.forEach(m=>m.el.classList.toggle('dim',!!n&&m!==n&&!nbr[n.id].has(m.id)));
+  links.forEach(k=>{const on=!!n&&(k.s===n||k.t===n);k.el.classList.toggle('hi',on);k.el.classList.toggle('dim',!!n&&!on);});
+}
+const P=document.getElementById('panel');
+function open(n){
+  sel=n;N.forEach(m=>m.el.classList.toggle('sel',m===n));highlight(n);
+  const T=TYPES[n.t];document.getElementById('p-type').textContent=T.n;document.getElementById('p-type').style.color=T.c;
+  document.getElementById('p-title').textContent=n.l;document.getElementById('p-quote').textContent=n.q;
+  document.getElementById('p-quote').style.borderLeftColor=T.c;document.getElementById('p-src').textContent=n.s||'';
+  const rel=document.getElementById('p-rel');rel.innerHTML='<b>Холбоос — яагаад:</b><br>';
+  links.filter(k=>k.s===n||k.t===n).forEach(k=>{const o=k.s===n?k.t:k.s;const b=document.createElement('button');b.textContent=`${o.l} · ${k.why}`;b.onclick=()=>open(o);rel.append(b);});
+  P.classList.add('open');
+}
+function close(){sel=null;P.classList.remove('open');N.forEach(m=>m.el.classList.remove('sel'));highlight(null);}
+document.getElementById('close').onclick=close;
+addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+addEventListener('resize',()=>{W=svg.clientWidth;H=svg.clientHeight;alpha=0.5;});
+// legend
+const lg=document.getElementById('legend');Object.values(TYPES).forEach(t=>{const s=document.createElement('span');s.innerHTML=`<i style="background:${t.c}"></i>${t.n}`;lg.append(s);});
+</script>
+</body></html>
